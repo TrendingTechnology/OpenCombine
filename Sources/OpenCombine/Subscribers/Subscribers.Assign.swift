@@ -108,9 +108,7 @@ extension Subscribers {
         }
 
         private func terminateAndConsumeLock() {
-#if DEBUG
-            lock.assertOwner()
-#endif
+            lock.assertOwnerDebugOnly()
             status = .terminal
             object = nil
             lock.unlock()

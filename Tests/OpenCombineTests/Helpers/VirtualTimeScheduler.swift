@@ -234,7 +234,7 @@ final class VirtualTimeScheduler: Scheduler {
             }
 
             func describeDate(_ date: SchedulerTimeType) -> String {
-                return ".nanoseconds(\(date.time)"
+                return ".nanoseconds(\(date.time))"
             }
 
             func describeStride(_ stride: SchedulerTimeType.Stride) -> String {

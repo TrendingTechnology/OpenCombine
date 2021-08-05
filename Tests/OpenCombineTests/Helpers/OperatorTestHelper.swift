@@ -51,7 +51,7 @@ class OperatorTestHelper<SourceValue,
     ///   instance of the operator that you are trying to test.
     init(publisherType: SourcePublisher.Type,
          initialDemand: Subscribers.Demand?,
-         receiveValueDemand: Subscribers.Demand,
+         receiveValueDemand: @escaping (Value) -> Subscribers.Demand,
          customSubscription: CustomSubscription = CustomSubscription(),
          createSut: (SourcePublisher) -> Sut)
     {
@@ -63,12 +63,40 @@ class OperatorTestHelper<SourceValue,
             receiveSubscription: {
                 initialDemand.map($0.request)
             },
-            receiveValue: { _ in receiveValueDemand }
+            receiveValue: receiveValueDemand
         )
         tracking.onSubscribe = { [weak self] in
             self?.downstreamSubscription = $0
         }
         sut.subscribe(tracking)
+    }
+
+    /// This initializes the `OperatorTestHelper`.  In most cases,
+    /// you can just pass a `publisherType` and closure
+    /// for `createSut` to get all the setup that you'll need for a test.
+    /// - Parameter publisherType: This should be filled in with the
+    ///   type of `CustomPublisherBase` that you would like the
+    ///   operator you are testing to be built from.
+    /// - Parameter initialDemand: This is the demand that the
+    ///   created `TrackingSubscriber` should return upon receiving a subscription.
+    /// - Parameter receiveValueDemand: This is the demand that the
+    ///   created `TrackingSubscriber should return upon receiving a value.
+    /// - Parameter customSubscription: This parameter defaults to `CustomSubscription()`,
+    ///   but can be replaced with your own instance if you want to override
+    ///   any of the default `CustomSubscription` initializer closures.
+    /// - Parameter createSut: This closure takes a new concrete instance
+    ///   of the `publisherType` as an input to the closure and creates an
+    ///   instance of the operator that you are trying to test.
+    convenience init(publisherType: SourcePublisher.Type,
+                     initialDemand: Subscribers.Demand?,
+                     receiveValueDemand: Subscribers.Demand,
+                     customSubscription: CustomSubscription = CustomSubscription(),
+                     createSut: (SourcePublisher) -> Sut)
+    {
+        self.init(publisherType: publisherType,
+                  initialDemand: initialDemand,
+                  receiveValueDemand: { _ in receiveValueDemand },
+                  createSut: createSut)
     }
 
     deinit {

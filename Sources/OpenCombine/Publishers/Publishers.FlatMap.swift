@@ -478,9 +478,7 @@ extension Publishers.FlatMap {
         private func releaseLockThenSendCompletionDownstreamIfNeeded(
             outerFinished: Bool
         ) -> Bool {
-#if DEBUG
-            lock.assertOwner() // Sanity check
-#endif
+            lock.assertOwnerDebugOnly()
             if !cancelledOrCompleted && outerFinished && buffer.isEmpty &&
                 subscriptions.count + pendingSubscriptions == 0 {
                 cancelledOrCompleted = true

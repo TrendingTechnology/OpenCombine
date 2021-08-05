@@ -26,5 +26,13 @@ internal struct __UnfairRecursiveLock { // swiftlint:disable:this type_name
 }
 #endif // WASI
 
+extension __UnfairLock {
+    internal func assertOwnerDebugOnly() {
+#if DEBUG
+        assertOwner()
+#endif
+    }
+}
+
 internal typealias UnfairLock = __UnfairLock
 internal typealias UnfairRecursiveLock = __UnfairRecursiveLock

@@ -85,9 +85,7 @@ public final class CurrentValueSubject<Output, Failure: Error>: Subject {
     }
 
     private func sendValueAndConsumeLock(_ newValue: Output) {
-#if DEBUG
-        lock.assertOwner()
-#endif
+        lock.assertOwnerDebugOnly()
         guard active else {
             lock.unlock()
             return

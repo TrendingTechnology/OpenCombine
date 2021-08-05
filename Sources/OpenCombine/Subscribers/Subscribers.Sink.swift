@@ -89,9 +89,7 @@ extension Subscribers {
         }
 
         private func terminateAndConsumeLock() {
-#if DEBUG
-            lock.assertOwner()
-#endif
+            lock.assertOwnerDebugOnly()
             status = .terminal
             receiveValue = { _ in }
             receiveCompletion = { _ in }

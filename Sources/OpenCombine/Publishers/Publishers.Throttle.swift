@@ -93,20 +93,10 @@ extension Publishers {
             self.latest = latest
         }
 
-        /// Attaches the specified subscriber to this publisher.
-        ///
-        /// Implementations of ``Publisher`` must implement this method.
-        ///
-        /// The provided implementation of ``Publisher/subscribe(_:)-4u8kn``calls
-        /// this method.
-        ///
-        /// - Parameter subscriber: The subscriber to attach to this ``Publisher``,
-        ///     after which it can receive values.
         public func receive<Downstream: Subscriber>(subscriber: Downstream)
             where Downstream.Input == Output, Downstream.Failure == Failure
         {
-            let inner = Inner(parent: self, downstream: subscriber)
-            upstream.subscribe(inner)
+            upstream.subscribe(Inner(parent: self, downstream: subscriber))
         }
     }
 }
@@ -141,7 +131,6 @@ extension Publishers.Throttle {
         private var currentValue: Input?
         private var dueTime: Context.SchedulerTimeType
         private var scheduledToEmit = false
-        private var alreadySentSubscription = false
 
         init(parent: Parent, downstream: Downstream) {
             self.state = .ready(parent, downstream)
@@ -162,10 +151,8 @@ extension Publishers.Throttle {
             }
             state = .subscribed(parent, downstream, subscription, nil)
             dueTime = parent.scheduler.now
-            alreadySentSubscription = true
             lock.unlock()
 
-            // TODO: Test order
             downstreamLock.lock()
             downstream.receive(subscription: self)
             downstreamLock.unlock()
@@ -184,15 +171,11 @@ extension Publishers.Throttle {
 
             if parent.latest {
                 currentValue = input
-            } else {
-                if late {
-                    dueTime = dueTime.advanced(by: parent.interval)
-                    currentValue = input
-                } else {
-                    if currentValue == nil {
-                        currentValue = input
-                    }
-                }
+            } else if late {
+                dueTime = dueTime.advanced(by: parent.interval)
+                currentValue = input
+            } else if currentValue == nil {
+                currentValue = input
             }
 
             if scheduledToEmit || demand == .none {
@@ -201,7 +184,6 @@ extension Publishers.Throttle {
             }
 
             scheduleEmittingAndConsumeLock(scheduler: parent.scheduler, late: late)
-
             return .none
         }
 
@@ -212,7 +194,6 @@ extension Publishers.Throttle {
                                        subscription,
                                        nil) = state
             else {
-                // TODO: Test with non-nil completion
                 if !scheduledToEmit {
                     state = .terminal
                 }
@@ -247,8 +228,6 @@ extension Publishers.Throttle {
                 return
             }
 
-            // TODO: Test if we schedule even for zero demand
-
             scheduleEmittingAndConsumeLock(scheduler: parent.scheduler,
                                            late: parent.scheduler.now >= dueTime)
         }
@@ -277,9 +256,8 @@ extension Publishers.Throttle {
         // MARK: - Private
 
         private func scheduleEmittingAndConsumeLock(scheduler: Context, late: Bool) {
-#if DEBUG
-            lock.assertOwner()
-#endif
+            lock.assertOwnerDebugOnly()
+
             scheduledToEmit = true
             if late {
                 lock.unlock()
@@ -324,7 +302,7 @@ extension Publishers.Throttle {
             downstreamLock.lock()
 
             let newDemand = shouldSendValueDownstream
-                ? (valueToSend.map(downstream.receive(_:)) ?? .none)
+                ? downstream.receive(valueToSend!)
                 : .none
 
             if let completion = completion {
