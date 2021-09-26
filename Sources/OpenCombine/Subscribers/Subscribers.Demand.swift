@@ -7,7 +7,7 @@
 
 // swiftlint:disable shorthand_operator - because of false positives here
 
-#if canImport(_Concurrency)
+#if canImport(_Concurrency) && compiler(>=5.5)
 import _Concurrency
 #endif
 
@@ -472,6 +472,6 @@ extension Subscribers {
 }
 
 // TODO: Uncomment when macOS 12 is released
-#if canImport(_Concurrency) /* || compiler(>=5.5.x) */
+#if canImport(_Concurrency) && compiler(>=5.5) /* || compiler(>=5.5.x) */
 extension Subscribers.Demand: Sendable {}
 #endif
